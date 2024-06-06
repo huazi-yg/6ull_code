@@ -9,19 +9,14 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v4
-
-    - name: configure
-      run: ./configure
+    - uses: actions/checkout@master
 
     - name: Install dependencies
-      run: make
+      run: sudo apt get install make
 
-    - name: Run check
-      run: make check
+    - name: make
+      run: cd 按键点灯 && make
 
-    - name: Run distcheck
-      run: make distcheck
