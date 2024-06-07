@@ -18,5 +18,5 @@ jobs:
       run: sudo apt-get install make
 
     - name: make
-      run: cd 按键点灯 && make
+      run: cd 按键点灯 && make clean &&make
 
