@@ -15,7 +15,7 @@ jobs:
     - uses: actions/checkout@master
 
     - name: Install dependencies
-      run: sudo apt get install make
+      run: sudo apt-get install make
 
     - name: make
       run: cd 按键点灯 && make
