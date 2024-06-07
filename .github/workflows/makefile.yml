@@ -2,7 +2,7 @@ name: Makefile CI
 
 on:
   push:
-    branches: [ "master" ]
+    branches: [ "huazi-yg-patch-1" ]
   pull_request:
     branches: [ "master" ]
 
