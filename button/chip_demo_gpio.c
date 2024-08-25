@@ -45,6 +45,28 @@ static struct platform_driver chip_demo_gpio_driver  = {
 	
 };
 
+// struct IOMUX_REG
+// {
+// 	volatile unsigned int IOMUXC_SNVS_SW_MUX_CTL_PAD_SNVS_TAMPER1;
+// };
+
+struct GPIO_REG
+{
+	volatile unsigned int DR;
+	volatile unsigned int GDIR;
+	volatile unsigned int PSR;
+	volatile unsigned int ICR1;
+	volatile unsigned int ICR2;
+	volatile unsigned int IMR;
+	volatile unsigned int ISR;
+	volatile unsigned int EDGE_SEL;
+};
+
+//1. 打开GPIO时钟 GPIO5默认打开了（CCM_CCGR1->CG15）
+//2. 设置IOMUX复用功能为GOIO
+//3. 设置GPIO为输入模式
+//4. 读取GPIO的电平状态
+
 static int chip_demo_gpio_probe(struct platform_device * pdev)
 {
 	// struct device_node *np;
@@ -111,6 +133,8 @@ static struct button_operations board_button_opr = {
 	.read = board_demo_button_read,
 };
 
+
+
 static int __init chip_demo_gpio_drv_init(void)
 {
 	register_button_operations(&board_button_opr);
@@ -122,15 +146,39 @@ static void __exit chip_demo_gpio_drv_exit(void)
     unregister_button_operations(&board_button_opr);
 }
 
+volatile unsigned int *CCM_CCGR1;
+
+volatile unsigned int *IOMUXC_SNVS_SW_MUX_CTL_PAD_SNVS_TAMPER1;
+
+static struct GPIO_REG *gpio5;
+
 static int board_demo_button_init(int which)
 {
-	printk("%s %s %d, init gpio for button %d\n", __FILE__, __FUNCTION__, __LINE__, which);
+	if (!CCM_CCGR1) {
+		CCM_CCGR1 = ioremap(0x020c406c,4);
+		IOMUXC_SNVS_SW_MUX_CTL_PAD_SNVS_TAMPER1 = ioremap(0x022c000c,4);
+		gpio5 = ioremap(0x020ac000,sizeof(gpio5));
+	}
+
+	if(0 == which)
+	{
+		*CCM_CCGR1 |= 0x03 << 30;//enable gpio5时钟，当为reserved，gpio5默认使能
+		*IOMUXC_SNVS_SW_MUX_CTL_PAD_SNVS_TAMPER1 = 5;//选择GPIO5_IO01为GPIO功能
+		gpio5->GDIR &= ~(1<<1);//设置gpio为输入模式
+
+	}
 }
 
 static int board_demo_button_read(int which)
 {
-	printk("%s %s %d, read gpio for button %d\n", __FILE__, __FUNCTION__, __LINE__, which);
-	return 1;
+	//printk("%s %s %d, read gpio for button %d\n", __FILE__, __FUNCTION__, __LINE__, which);
+	int status = 0;
+	if(0 == which)
+	{
+		status = (gpio5->PSR >> 1)&0x01;
+	}
+	printk("key status %d \n", status);
+	return status;
 }
 
 module_init(chip_demo_gpio_drv_init);
