@@ -32,6 +32,7 @@ struct gpio_key
 
 static struct gpio_key *my_gpio_key;
 
+//4. 中断处理函数
 static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 {
 	struct gpio_key *gpio_key = dev_id;
@@ -68,6 +69,8 @@ static int gpio_key_probe(struct platform_device *pdev)
 			printk("%s %s line %d, of_get_gpio_flags fail\n", __FILE__, __FUNCTION__, __LINE__);
 			return -1;
 		}
+
+		//1.从设备树获取gpio
 		my_gpio_key[i].gpiod = gpio_to_desc(my_gpio_key[i].gpio);
 		my_gpio_key[i].flag = flag & OF_GPIO_ACTIVE_LOW;
 
@@ -77,12 +80,13 @@ static int gpio_key_probe(struct platform_device *pdev)
 		}
 
 		err = devm_gpio_request_one(&pdev->dev,my_gpio_key[i].gpio,flags,NULL);
-
+		//2.从gpio获取中断号
 		my_gpio_key[i].irq = gpio_to_irq(my_gpio_key[i].gpio);
 	}
 
 	for(i = 0;i<count;i++)
 	{
+		//3.申请中断
 		err = request_irq(my_gpio_key[i].irq,gpio_ker_isr,IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING,"gpio_key",&my_gpio_key[i]);
 	}
 	return 0;
