@@ -89,14 +89,14 @@
 //        compatible = "gpio-keys";
 //        pinctrl-names = "default";
 //        status = "disable";
-
+//
 //        user1 {
 //            label = "User1 Button";
 //            gpios = <&gpio5 1 GPIO_ACTIVE_LOW>;
 //            gpio-key,wakeup;
 //            linux,code = <KEY_1>;
 //      };
-        
+//        
 //        user2 {
 //            label = "User2 Button";
 //            gpios = <&gpio4 14 GPIO_ACTIVE_LOW>;
@@ -177,11 +177,11 @@
      };
 
     mykey {
-        compatible = "led1,6ull_key";
+        compatible = "key,6ull_key";
         pinctrl-names = "default";
         pinctrl-0 = <&key1 &key2>;
-        gpios = <&gpio5 1 GPIO_ACTIVE_LOW
-                &gpio4 14 GPIO_ACTIVE_LOW>;
+        gpios = <&gpio5 1 GPIO_ACTIVE_HIGH
+                &gpio4 14 GPIO_ACTIVE_HIGH>;
         
 
     };
@@ -430,6 +430,12 @@
                         };
         pinctrl_enet1: enet1grp {
             fsl,pins = <
+            >;
+        };
+
+		key2: key2 {
+            fsl,pins = <
+                MX6UL_PAD_NAND_CE1_B__GPIO4_IO14           0x000010B0
             >;
         };
 
@@ -727,12 +733,6 @@
         key1: key1 {
             fsl,pins = <
                 MX6ULL_PAD_SNVS_TAMPER1__GPIO5_IO01        0x000110A0
-            >;
-        };
-
-        key2: key2 {
-            fsl,pins = <
-                MX6UL_PAD_NAND_CE1_B__GPIO4_IO14           0x000010B0
             >;
         };
 
