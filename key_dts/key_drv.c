@@ -32,13 +32,79 @@ struct gpio_key
 
 static struct gpio_key *my_gpio_key;
 
+//主设备号
+static int major = 0;
+static struct class *gpio_key_class;
+
+//环形缓冲begin
+#define BUF_LEN 128
+static int g_keys[BUF_LEN];
+static int r,w;
+#define NEXT_POS(x) ((x+1)%BUF_LEN)
+static int is_key_buf_empty(void)
+{
+	return (r == w);
+}
+
+static int is_key_buf_full(void)
+{
+	return (r == NEXT_POS(w));
+}
+
+static void put_key(int key)
+{
+	if(!is_key_buf_full())
+	{
+		g_keys[w] = key;
+		w= NEXT_POS(w);
+	}
+}
+
+
+static int get_key(void)
+{
+		int key = 0;
+		if(!is_key_buf_empty())
+		{
+			key = g_keys[r];
+			r = NEXT_POS(r);
+		}
+		return key;
+
+}
+//环形缓冲end
+
+static DECLARE_WAIT_QUEUE_HEAD(gpio_key_wait);
+
+//实现对应的结构体内的函数
+static ssize_t gpio_key_drv_read(struct file *file,char __user *buf,size_t size,loff_t *offset)
+{
+	int err;
+	int key;
+
+	wait_event_interruptible(gpio_key_wait, !is_key_buf_empty());
+	key = get_key();
+	err = copy_to_user(buf,&key,4);
+	return 4;
+}
+
+static struct file_operations gpio_key_ops = {
+ .owner = THIS_MODULE,
+ .read = gpio_key_drv_read,
+};
 //4. 中断处理函数
 static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 {
 	struct gpio_key *gpio_key = dev_id;
 	int val;
+	int key;
 	val = gpiod_get_value(gpio_key->gpiod);
 	printk("key %d %d",gpio_key->gpio,val);
+
+	key = (gpio_key->gpio << 8) | val;
+	put_key(key);
+	wake_up_interruptible(&gpio_key_wait);
+
 	return IRQ_HANDLED;
 }
 
@@ -89,6 +155,22 @@ static int gpio_key_probe(struct platform_device *pdev)
 		//3.申请中断
 		err = request_irq(my_gpio_key[i].irq,gpio_ker_isr,IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING,"gpio_key",&my_gpio_key[i]);
 	}
+
+	//注册fops
+	major = register_chrdev(0,"my_gpio_key_class",&gpio_key_ops);
+
+	gpio_key_class = class_create(THIS_MODULE,"my_gpio_key_class");
+	if(IS_ERR(gpio_key_class))
+	{
+		//printk("%s %s line %d, of_get_gpio_flags fail\n", __FILE__, __FUNCTION__, __LINE__);
+		//unregister_chrdev(major,my_gpio_key_class");
+		
+		unregister_chrdev(major,"my_gpio_key_class");
+		return PTR_ERR(gpio_key_class);
+		
+	}
+
+	device_create(gpio_key_class,NULL,MKDEV(major,0),NULL,"my_gpio_key");
 	return 0;
 	
 }
@@ -98,6 +180,10 @@ static int gpio_key_remove(struct platform_device *pdev)
 	struct device_node *node = pdev->dev.of_node;
 	int count;
 	int i;
+
+	device_destroy(gpio_key_class,MKDEV(major, 0));
+	class_destroy(gpio_key_class);
+	unregister_chrdev(major,"my_gpio_key_class");
 
 	count = of_gpio_count(node);
 	for(i = 0;i<count;i++)
