@@ -33,6 +33,9 @@ struct gpio_key
 
 static struct gpio_key *my_gpio_key;
 
+//异步通知
+static struct fasync_struct *button_fasync;
+
 //主设备号
 static int major = 0;
 static struct class *gpio_key_class;
@@ -95,11 +98,29 @@ static unsigned int gpio_key_drv_poll(struct file *file,poll_table * wait)
 	poll_wait(file,&gpio_key_wait,wait);
 	return is_key_buf_empty() ? 0 :(POLLIN | POLLRDNORM);
 }
+
+static int gpio_key_drv_fasync(int fd,struct file *file,int on)
+{
+	if(fasync_helper(fd,file,on,&button_fasync) >= 0)
+	{
+		printk("fasync_helper ok\n");
+		return 0;
+	}
+	else
+	{
+		printk("fasync_helper error\n");
+		return -EIO;
+	}
+}
+
 static struct file_operations gpio_key_ops = {
  .owner = THIS_MODULE,
  .read = gpio_key_drv_read,
  .poll = gpio_key_drv_poll,
+ .fasync = gpio_key_drv_fasync,
 };
+
+
 //4. 中断处理函数
 static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 {
@@ -112,7 +133,8 @@ static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 	key = (gpio_key->gpio << 8) | val;
 	put_key(key);
 	wake_up_interruptible(&gpio_key_wait);
-
+	kill_fasync(&button_fasync,SIGIO,POLL_IN);
+	printk("kill_fasync");
 	return IRQ_HANDLED;
 }
 
