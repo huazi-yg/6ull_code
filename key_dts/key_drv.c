@@ -29,6 +29,7 @@ struct gpio_key
 	struct gpio_desc *gpiod;
 	int flag;
 	int irq;
+	struct timer_list key_timer;
 };
 
 static struct gpio_key *my_gpio_key;
@@ -80,6 +81,21 @@ static int get_key(void)
 
 static DECLARE_WAIT_QUEUE_HEAD(gpio_key_wait);
 
+static void key_timer_expire(unsigned long data)
+{
+	struct gpio_key *gpio_key = data;
+	int val;
+	int key;
+
+	val = gpiod_get_value(gpio_key->gpiod);
+
+	printk("key_timer_expire key %d %d\n",gpio_key->gpio,val);
+	key = (gpio_key->gpio << 8) | val;
+	put_key(key);
+	wake_up_interruptible(&gpio_key_wait);
+	kill_fasync(&button_fasync,SIGIO,POLL_IN);
+}
+
 //实现对应的结构体内的函数
 static ssize_t gpio_key_drv_read(struct file *file,char __user *buf,size_t size,loff_t *offset)
 {
@@ -130,16 +146,9 @@ static struct file_operations gpio_key_ops = {
 static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 {
 	struct gpio_key *gpio_key = dev_id;
-	int val;
-	int key;
-	val = gpiod_get_value(gpio_key->gpiod);
-	printk("key %d %d",gpio_key->gpio,val);
+	printk("gpio_key_isr key %d irq happened\n",gpio_key->gpio);
+	mod_timer(&gpio_key->key_timer,jiffies + HZ/5);
 
-	key = (gpio_key->gpio << 8) | val;
-	put_key(key);
-	wake_up_interruptible(&gpio_key_wait);
-	kill_fasync(&button_fasync,SIGIO,POLL_IN);
-	printk("kill_fasync");
 	return IRQ_HANDLED;
 }
 
@@ -183,6 +192,12 @@ static int gpio_key_probe(struct platform_device *pdev)
 		err = devm_gpio_request_one(&pdev->dev,my_gpio_key[i].gpio,flags,NULL);
 		//2.从gpio获取中断号
 		my_gpio_key[i].irq = gpio_to_irq(my_gpio_key[i].gpio);
+
+		//定时器
+		setup_timer(&my_gpio_key[i].key_timer,key_timer_expire,&my_gpio_key[i]);
+		my_gpio_key[i].key_timer.expires = ~0;
+		add_timer(&my_gpio_key[i].key_timer);
+		
 	}
 
 	for(i = 0;i<count;i++)
@@ -224,6 +239,7 @@ static int gpio_key_remove(struct platform_device *pdev)
 	for(i = 0;i<count;i++)
 	{
 		free_irq(my_gpio_key[i].irq,&my_gpio_key[i]);
+		del_timer(&my_gpio_key[i].key_timer);
 	}
 	kfree(my_gpio_key);
 	return 0;

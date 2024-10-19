@@ -7,7 +7,7 @@
 #include <poll.h>
 #include <signal.h>
 
-//#define BLOCK
+#define BLOCK
 int fd;
 
 static void sig_func(int sig)
@@ -35,7 +35,7 @@ int main(int argc,char **argv)
 	//注册信号函数
 	signal(SIGIO,sig_func);
 	//打开文件
-	#if BLOCK
+	#ifdef BLOCK
 	fd = open(argv[1],O_RDWR);
 	#else
 	fd = open(argv[1],O_RDWR|O_NONBLOCK);
@@ -53,7 +53,7 @@ int main(int argc,char **argv)
 	flags = fcntl(fd,F_GETFL);
 	fcntl(fd,F_SETFL,flags );
 
-#if BLOCK
+#ifdef BLOCK
 	fcntl(fd,F_SETFL,flags & ~ O_NONBLOCK);
 #else
 	fcntl(fd,F_SETFL,flags | O_NONBLOCK);
@@ -65,10 +65,10 @@ int main(int argc,char **argv)
 		{
 			printf("my_gpio_key 0x%x\n\n",val);
 		}
-		else
-		{
-			printf("while get button: -1\n");
-		}
+//		else
+//		{
+//			printf("while get button: -1\n");
+//		}
 	}
 	close(fd);
 	return 0;
