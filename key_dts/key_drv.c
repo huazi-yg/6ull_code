@@ -30,6 +30,7 @@ struct gpio_key
 	int flag;
 	int irq;
 	struct timer_list key_timer;
+	struct tasklet_struct key_tasklet;
 };
 
 static struct gpio_key *my_gpio_key;
@@ -86,7 +87,6 @@ static void key_timer_expire(unsigned long data)
 	struct gpio_key *gpio_key = data;
 	int val;
 	int key;
-
 	val = gpiod_get_value(gpio_key->gpiod);
 
 	printk("key_timer_expire key %d %d\n",gpio_key->gpio,val);
@@ -94,6 +94,17 @@ static void key_timer_expire(unsigned long data)
 	put_key(key);
 	wake_up_interruptible(&gpio_key_wait);
 	kill_fasync(&button_fasync,SIGIO,POLL_IN);
+}
+
+static void key_tasklet_func(unsigned long data)
+{
+	struct gpio_key *gpio_key = data;
+	int val;
+	int key;
+
+	val = gpiod_get_value(gpio_key->gpiod);
+
+	printk("tasklet key %d %d\n",gpio_key->gpio,val);
 }
 
 //实现对应的结构体内的函数
@@ -147,7 +158,8 @@ static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 {
 	struct gpio_key *gpio_key = dev_id;
 	printk("gpio_key_isr key %d irq happened\n",gpio_key->gpio);
-	mod_timer(&gpio_key->key_timer,jiffies + HZ/5);
+	tasklet_schedule(&gpio_key->key_tasklet);
+	mod_timer(&gpio_key->key_timer,jiffies + HZ/50);
 
 	return IRQ_HANDLED;
 }
@@ -197,6 +209,9 @@ static int gpio_key_probe(struct platform_device *pdev)
 		setup_timer(&my_gpio_key[i].key_timer,key_timer_expire,&my_gpio_key[i]);
 		my_gpio_key[i].key_timer.expires = ~0;
 		add_timer(&my_gpio_key[i].key_timer);
+
+		//tasklet
+		tasklet_init(&my_gpio_key[i].key_tasklet,key_tasklet_func,&my_gpio_key[i]);
 		
 	}
 
@@ -240,6 +255,7 @@ static int gpio_key_remove(struct platform_device *pdev)
 	{
 		free_irq(my_gpio_key[i].irq,&my_gpio_key[i]);
 		del_timer(&my_gpio_key[i].key_timer);
+		tasklet_kill(&my_gpio_key[i].key_tasklet);
 	}
 	kfree(my_gpio_key);
 	return 0;
