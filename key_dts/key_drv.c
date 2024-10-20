@@ -167,15 +167,30 @@ static struct file_operations gpio_key_ops = {
 
 
 //4. 中断处理函数
-static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
+static irqreturn_t gpio_key_isr(int irq,void *dev_id)
 {
 	struct gpio_key *gpio_key = dev_id;
 	printk("gpio_key_isr key %d irq happened\n",gpio_key->gpio);
 	tasklet_schedule(&gpio_key->key_tasklet);
 	mod_timer(&gpio_key->key_timer,jiffies + HZ/50);
 	schedule_work(&gpio_key->key_work);
+	return IRQ_WAKE_THREAD;
+}
+
+//内核线程
+static irqreturn_t gpio_thread_func(int irq,void *data)
+{
+	struct gpio_key *gpio_key = data;
+	int val;
+	val = gpiod_get_value(gpio_key->gpiod);
+
+	printk("gpio_thread_func:the process is %s pid %d\n",current->comm,current->pid);
+	printk("gpio_thread_func key %d %d\n",gpio_key->gpio,val);
+
 	return IRQ_HANDLED;
 }
+
+
 
 static int gpio_key_probe(struct platform_device *pdev)
 {
@@ -228,13 +243,18 @@ static int gpio_key_probe(struct platform_device *pdev)
 
 		//work queue
 		INIT_WORK(&my_gpio_key[i].key_work,key_work_func);
+
+		
+		
 		
 	}
 
 	for(i = 0;i<count;i++)
 	{
 		//3.申请中断
-		err = request_irq(my_gpio_key[i].irq,gpio_ker_isr,IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING,"gpio_key",&my_gpio_key[i]);
+		//err = request_irq(my_gpio_key[i].irq,gpio_ker_isr,IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING,"gpio_key",&my_gpio_key[i]);
+		//内核线程
+		err = request_threaded_irq(my_gpio_key[i].irq,gpio_key_isr,gpio_thread_func,IRQF_TRIGGER_RISING|IRQF_TRIGGER_FALLING,"gpio_key",&my_gpio_key[i]);
 	}
 
 	//注册fops
