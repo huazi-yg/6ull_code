@@ -22,6 +22,7 @@
 #include <linux/interrupt.h>
 #include <linux/irq.h>
 #include <linux/slab.h>
+#include <asm/current.h>
 
 struct gpio_key
 {
@@ -31,6 +32,7 @@ struct gpio_key
 	int irq;
 	struct timer_list key_timer;
 	struct tasklet_struct key_tasklet;
+	struct work_struct key_work;
 };
 
 static struct gpio_key *my_gpio_key;
@@ -107,6 +109,17 @@ static void key_tasklet_func(unsigned long data)
 	printk("tasklet key %d %d\n",gpio_key->gpio,val);
 }
 
+static void key_work_func(struct work_struct *work)
+{
+	struct gpio_key *gpio_key = container_of(work,struct gpio_key,key_work);
+	int val;
+
+	val = gpiod_get_value(gpio_key->gpiod);
+	printk("key_work:the process is %s pid %d\n",current->comm,current->pid);
+	printk("key_work key %d %d\n",gpio_key->gpio,val);
+
+}
+
 //实现对应的结构体内的函数
 static ssize_t gpio_key_drv_read(struct file *file,char __user *buf,size_t size,loff_t *offset)
 {
@@ -160,7 +173,7 @@ static irqreturn_t gpio_ker_isr(int irq,void *dev_id)
 	printk("gpio_key_isr key %d irq happened\n",gpio_key->gpio);
 	tasklet_schedule(&gpio_key->key_tasklet);
 	mod_timer(&gpio_key->key_timer,jiffies + HZ/50);
-
+	schedule_work(&gpio_key->key_work);
 	return IRQ_HANDLED;
 }
 
@@ -212,6 +225,9 @@ static int gpio_key_probe(struct platform_device *pdev)
 
 		//tasklet
 		tasklet_init(&my_gpio_key[i].key_tasklet,key_tasklet_func,&my_gpio_key[i]);
+
+		//work queue
+		INIT_WORK(&my_gpio_key[i].key_work,key_work_func);
 		
 	}
 
