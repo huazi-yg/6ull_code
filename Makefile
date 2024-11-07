@@ -17,7 +17,7 @@ export STRIP OBJCOPY OBJDUMP
 CFLAGS := -Wall -O2 -g
 CFLAGS += -I $(shell pwd)/include
 
-LDFLAGS := 
+LDFLAGS := -lts
 
 export CFLAGS LDFLAGS
 
@@ -27,6 +27,7 @@ export TOPDIR
 TARGET := test
 
 obj-y += display/
+obj-y += input/
 obj-y += unittest/
 
 
