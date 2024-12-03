@@ -49,3 +49,10 @@ InputDevice g_tTouchscreen = {
 	.Device_Init = TouchscreenDevice_Init,
 	.Device_Exit = TouchscreenDevice_Exit,
 };
+
+void TouchscreenDevRegiseter(void)
+{
+	regiseter_input_device(&g_tTouchscreen);
+};
+
+

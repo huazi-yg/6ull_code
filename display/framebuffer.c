@@ -34,7 +34,6 @@ static Display_Opr g_tFramebufferOpr = {
 
 static int fb_device_init(void)
 {
-	int i;
 	
 	fd_fb = open("/dev/fb0", O_RDWR);
 	if (fd_fb < 0)
@@ -74,7 +73,7 @@ static int fb_get_buffer(pDispbuff ptDispbuff)
 	ptDispbuff->xres = var.xres;
 	ptDispbuff->yres = var.yres;
 	ptDispbuff->bpp = var.bits_per_pixel;
-	ptDispbuff->buf = fb_base;
+	ptDispbuff->buf = (char *)fb_base;
 	return 0;
 }
 

@@ -6,6 +6,8 @@
 
 extern InputDevice g_tTouchscreen;
 
+void TouchscreenDevRegiseter(void);
+
 #endif
 
 

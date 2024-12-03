@@ -85,3 +85,8 @@ InputDevice g_tNetinput = {
 	.Device_Init = NetinputDevice_Init,
 	.Device_Exit = NetinputDevice_Exit,
 };
+
+void NetinputDevRegiseter(void)
+{
+	regiseter_input_device(&g_tNetinput);
+};

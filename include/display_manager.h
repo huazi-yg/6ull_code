@@ -31,7 +31,7 @@ void display_init(void);
 int select_default_display(char *name);
 int init_default_display(void);
 int put_pixel(int x,int y,unsigned int color);
-static int flushregion(p_region pt_region,pDispbuff ptDispbuff);
+int flushregion(p_region pt_region,pDispbuff ptDispbuff);
 
 	
 #endif

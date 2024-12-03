@@ -7,24 +7,34 @@ int main(int argc, char **argv)
 	InputEvent event;
 	int ret;
 
-	g_tTouchscreen.Device_Init();
+	input_init();//初始化输入
+	input_device_init();//初始化设备
 
 	while(1)
+	{
+		ret = get_input_event(&event);
+		if (ret) {
+			printf("get input event error\n");
+			return -1;
+		}
+		else
 		{
-			g_tTouchscreen.GetInputEvent(&event);
-			if (ret) {
-				printf("get inpout event error\n");
-				return -1;
-			}
-			else
+			if(event.iType = INPUT_TYPE_TOUCH)
 			{
 				printf("type      : %d \n",event.iType);
 				printf("x         : %d \n",event.iX);
 				printf("y         : %d \n",event.iY);
 				printf("iPressure : %ud \n",event.iPressure);
 			}
+			else if(event.iType = INPUT_TYPE_NET)
+			{
+				printf("type	  : %d \n",event.iType);
+				printf("str       : %s \n",event.str);
+			}
 			
 		}
+		
+	}
 	return 0;	
 }
 

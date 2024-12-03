@@ -25,6 +25,9 @@ typedef struct InputDevice {
 	struct InputDevice *ptNext;
 }InputDevice,*pInputDevice;
 
+void regiseter_input_device(pInputDevice ptInputEvent);
+
+
 #endif
 
 
