@@ -1,5 +1,5 @@
 EXTRA_CFLAGS  := 
 CFLAGS_file.o := 
 
-obj-y += netinput_test.o
+obj-y += font_test.o
 

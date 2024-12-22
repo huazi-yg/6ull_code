@@ -12,6 +12,33 @@ static Dispbuff g_display_buff;
 static int line_width;
 static int pixel_width;
 
+void DrawFontBitMap(pFontBitMap ptFontBitMap,unsigned int color)
+{
+    int  i, j, p, q;
+	int  x = ptFontBitMap->tregion.iLeftupx; 
+	int  y = ptFontBitMap->tregion.ileftupy;
+    int  x_max = x + ptFontBitMap->tregion.iwidth;
+    int  y_max = y + ptFontBitMap->tregion.iheigh;
+	int  width = ptFontBitMap->tregion.iwidth;
+	unsigned char * buffer = ptFontBitMap->pucBuffer;
+
+    //printf("x = %d, y = %d\n", x, y);
+
+    for ( j = y, q = 0; j < y_max; j++, q++ )
+    {
+        for ( i = x, p = 0; i < x_max; i++, p++ )
+        {
+            if ( i < 0      || j < 0       ||
+                i >= g_display_buff.xres || j >= g_display_buff.yres )
+            continue;
+
+            //image[j][i] |= bitmap->buffer[q * bitmap->width + p];
+			if(buffer[q * width + p])
+				put_pixel(i, j, color);
+        }
+    }
+
+}
 
 int put_pixel(int x,int y,unsigned int color)
 {

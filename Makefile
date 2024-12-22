@@ -11,14 +11,16 @@ STRIP		= $(CROSS_COMPILE)strip
 OBJCOPY		= $(CROSS_COMPILE)objcopy
 OBJDUMP		= $(CROSS_COMPILE)objdump
 
+
 export AS LD CC CPP AR NM
 export STRIP OBJCOPY OBJDUMP
 
 CFLAGS := -Wall -O2 -g
 CFLAGS += -I $(shell pwd)/include
+CFLAGS += -I /home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-gnueabihf_sdk-buildroot/bin/../lib/gcc/arm-buildroot-linux-gnueabihf/7.5.0/include/freetype2
 
 LDFLAGS := -lts -lpthread
-
+LDFLAGS += -L/home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-gnueabihf_sdk-buildroot/bin/../lib/gcc/arm-buildroot-linux-gnueabihf/7.5.0/../../../../arm-buildroot-linux-gnueabihf/lib -lfreetype
 export CFLAGS LDFLAGS
 
 TOPDIR := $(shell pwd)
@@ -29,7 +31,7 @@ TARGET := test
 obj-y += display/
 obj-y += input/
 obj-y += unittest/
-
+obj-y += font/
 
 all : start_recursive_build $(TARGET)
 	@echo $(TARGET) has been built!
@@ -48,4 +50,3 @@ distclean:
 	rm -f $(shell find -name "*.o")
 	rm -f $(shell find -name "*.d")
 	rm -f $(TARGET)
-	
