@@ -28,5 +28,7 @@ int init_default_display(void);
 int put_pixel(int x,int y,unsigned int color);
 int flushregion(p_region pt_region,pDispbuff ptDispbuff);
 pDispbuff GetDisplayBuffer(void);
-	
+
+void DrawRegion(p_region pt_region,unsigned int color);
+void DrawTextRegionCenter(char *name,p_region pt_region,unsigned int color);
 #endif

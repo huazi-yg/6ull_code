@@ -40,6 +40,72 @@ void DrawFontBitMap(pFontBitMap ptFontBitMap,unsigned int color)
 
 }
 
+void DrawRegion(p_region pt_region,unsigned int color)
+{
+    int  i, j;
+	int  x = pt_region->iLeftupx; 
+	int  y = pt_region->ileftupy;
+	int  width = pt_region->iwidth;
+	int  heigh = pt_region->iheigh;
+
+    printf("region x = %d, y = %d,width %d,height %d\n", x, y,width,heigh);
+
+    for ( j = y; j < y+heigh; j++)
+    {
+        for ( i = x; i < x + width; i++)
+        {
+		put_pixel(i, j, color);
+        }
+    }
+
+}
+
+void DrawTextRegionCenter(char *name,p_region pt_region,unsigned int color)
+{
+	int n = strlen(name);
+	int iFontSize = pt_region->iwidth/n/2;
+
+	int ioriginx;
+	int ioriginy;
+
+	int i = 0;
+	int error;
+
+	FontBitMap tFontBitMap;
+	if(iFontSize > pt_region->iheigh)
+		iFontSize = pt_region->iheigh;
+
+	ioriginx = (pt_region->iwidth - n *iFontSize)/2 + pt_region->iLeftupx;
+	ioriginy = (pt_region->iheigh - iFontSize)/2 + iFontSize +pt_region->ileftupy;
+
+	printf("n:%d size %dfont %d %d\n",n,iFontSize,ioriginx,ioriginy);
+
+	SetFontSize(iFontSize);
+	
+	while(name[i])
+	{
+		tFontBitMap.iCurOriginX = ioriginx;
+		tFontBitMap.iCurOriginY = ioriginy;
+		error = GetFontBitMap(name[i],&tFontBitMap);
+		if(error)
+		{
+			
+			printf("GetFontBitMap error !\n");
+			return -1;
+		}
+		//draw
+		DrawFontBitMap(&tFontBitMap,color);
+		// flushregion(&tFontBitMap.tregion,ptBuffer);
+		
+		ioriginx = tFontBitMap.iCurOriginX;
+		ioriginy = tFontBitMap.iCurOriginY;
+
+		i++;
+	}
+}
+
+
+
 int put_pixel(int x,int y,unsigned int color)
 {
 	unsigned char *pen_8 = (unsigned char *)(g_display_buff.buf+y*line_width+x*pixel_width);

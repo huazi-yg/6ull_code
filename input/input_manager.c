@@ -82,6 +82,7 @@ static void *input_recv_thread_func(void *data)
 		}
 		
 	}
+	return 0;
 }
 void input_init(void)
 {
