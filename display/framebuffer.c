@@ -9,6 +9,7 @@
 #include <sys/ioctl.h>
 
 #include "display_manager.h"
+#include "framebuffer.h"
 
 static int fd_fb;
 static struct fb_var_screeninfo var;	/* Current var */

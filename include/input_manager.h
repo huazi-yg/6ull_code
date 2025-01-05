@@ -3,8 +3,8 @@
 
 #include <sys/time.h>
 
-#define INPUT_TYPE_TOUCH 	0
-#define INPUT_TYPE_NET		1
+#define INPUT_TYPE_TOUCH 	1
+#define INPUT_TYPE_NET		2
 
 typedef struct InputEvent {
 	int iType;//输入类型
@@ -26,6 +26,9 @@ typedef struct InputDevice {
 }InputDevice,*pInputDevice;
 
 void regiseter_input_device(pInputDevice ptInputEvent);
+int get_input_event(pInputEvent ptInputEvent);
+void input_init(void);
+void input_device_init(void);
 
 
 #endif

@@ -1,5 +1,7 @@
 #include "font_manager.h"
 #include "freetype.h"
+#include <string.h>
+
 
 static pFont_Opr g_ptFonts = NULL;
 static pFont_Opr g_ptDefaultFontOpr = NULL;

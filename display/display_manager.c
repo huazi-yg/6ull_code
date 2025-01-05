@@ -48,7 +48,7 @@ void DrawRegion(p_region pt_region,unsigned int color)
 	int  width = pt_region->iwidth;
 	int  heigh = pt_region->iheigh;
 
-    printf("region x = %d, y = %d,width %d,height %d\n", x, y,width,heigh);
+    //printf("region x = %d, y = %d,width %d,height %d\n", x, y,width,heigh);
 
     for ( j = y; j < y+heigh; j++)
     {
@@ -91,7 +91,7 @@ void DrawTextRegionCenter(char *name,p_region pt_region,unsigned int color)
 		{
 			
 			printf("GetFontBitMap error !\n");
-			return -1;
+			return ;
 		}
 		//draw
 		DrawFontBitMap(&tFontBitMap,color);

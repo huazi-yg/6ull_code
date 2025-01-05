@@ -122,6 +122,7 @@ int get_input_event(pInputEvent ptInputEvent)
 	pthread_mutex_lock(&g_tMutex);
 	if(GetInputEventFromBuffer(&tEvent))
 	{
+		*ptInputEvent = tEvent;
 		pthread_mutex_unlock(&g_tMutex);
 		return 0;
 	}
@@ -130,6 +131,7 @@ int get_input_event(pInputEvent ptInputEvent)
 		pthread_cond_wait(&g_tConVar,&g_tMutex);
 		if(GetInputEventFromBuffer(&tEvent))
 		{
+			*ptInputEvent = tEvent;
 			ret = 0;
 		}
 		else

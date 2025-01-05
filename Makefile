@@ -21,6 +21,7 @@ CFLAGS += -I /home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-
 
 LDFLAGS := -lts -lpthread
 LDFLAGS += -L/home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-gnueabihf_sdk-buildroot/bin/../lib/gcc/arm-buildroot-linux-gnueabihf/7.5.0/../../../../arm-buildroot-linux-gnueabihf/lib -lfreetype
+LDFLAGS += -lm
 export CFLAGS LDFLAGS
 
 TOPDIR := $(shell pwd)
@@ -30,9 +31,12 @@ TARGET := test
 
 obj-y += display/
 obj-y += input/
-obj-y += unittest/
+#obj-y += unittest/
 obj-y += font/
 obj-y += ui/
+obj-y += page/
+obj-y += business/
+obj-y += config/
 
 all : start_recursive_build $(TARGET)
 	@echo $(TARGET) has been built!

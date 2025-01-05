@@ -1,5 +1,5 @@
-#ifndef _DISPLAY_MANAGER_H
-#define _DISPLAY_MANAGER_H
+#ifndef _FRAMEBUFFER_H
+#define _FRAMEBUFFER_H
 
 void FramebufferInit(void);
 
