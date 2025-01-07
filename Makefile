@@ -29,14 +29,9 @@ export TOPDIR
 
 TARGET := test
 
-obj-y += display/
-obj-y += input/
 #obj-y += unittest/
-obj-y += font/
-obj-y += ui/
-obj-y += page/
 obj-y += business/
-obj-y += config/
+
 
 all : start_recursive_build $(TARGET)
 	@echo $(TARGET) has been built!

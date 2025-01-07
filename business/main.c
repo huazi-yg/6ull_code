@@ -1,55 +1,68 @@
-#include <sys/mman.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <linux/fb.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/ioctl.h>
-#include <display_manager.h>
-#include <framebuffer.h>
-#include <stdlib.h>
-
-#include <font_manager.h>
+#include <errno.h>
+#include <string.h>
 #include <stdio.h>
-#include <page_manager.h>
-#include <input_manager.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <linux/i2c.h>
+#include <linux/i2c-dev.h>
+#include <i2c/smbus.h>
+#include "i2cbusses.h"
 
 
+/*
+ * ./test <iic_bus number> w "i2c hello"
+ * ./test 0 r
+ */
 int main(int argc, char **argv)
 {
-	int error;
+	unsigned char dev_addr = 0x50;
+	unsigned char mem_addr = 0;
+	unsigned char buf[32];
+	int file;
+	char filename[20];
+	char *str;
 
-	if(argc != 2)
+	if(argc != 3 && argc != 4)
 	{
-		printf("Usage: %s <font_file> \n",argv[0]);
+		printf("Usage: \n");
+		printf("write eeprom:%s <dev> w str\n",argv[0]);
+		printf("read  eeprom:%s <dev> r\n",argv[0]);
 		return -1;
 	}
 
-	display_init();
-	select_default_display("fb");
-	init_default_display();
-
-	//注册字体
-	FontsRegister();	
-	error = SelectAndInitFont("freetype",argv[1]);
-	if(error)
+	file = open_i2c_dev((int)(argv[1][0]-'0'),filename,sizeof(filename),0);
+	if(file < 0)
 	{
-		
-		printf("SelectAndInitFont error !\n");
+		printf("can not open %s\n",filename);
 		return -1;
 	}
+
 	
-	//SetFontSize(font_size);
+	if(set_slave_addr(file,dev_addr,1))
+	{
+		printf("can not set_slave_addr \n");
+		return -1;
+	}
 
-	input_init();//初始化输入
-	input_device_init();//初始化设备
-
-	//初始化页面系统
-	PagesRegister();
-	/* 运行业务系统的主页面 */
-	Page("main")->Run(NULL);
+	if (argv[2][0] == 'w')
+	{
+		//write
+		str = argv[3];
+		while(*str)
+		{
+			//mem_addr ,*str
+			i2c_smbus_write_byte_data(file,mem_addr,*str);
+			mem_addr++;str++;
+		}
+		i2c_smbus_write_byte_data(file,mem_addr,0);
+	}
+	else
+	{
+		i2c_smbus_read_i2c_block_data(file,mem_addr,sizeof(buf),buf);
+		buf[31] = '\0';
+		printf("get data:%s\n",buf);
+	}
 
 	return 0;	
 }
