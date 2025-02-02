@@ -1,52 +1,10 @@
+KERN_DIR = /home/y/Documents/100ask_imx6ull-sdk/Linux-4.9.88/
 
-CROSS_COMPILE ?= 
-AS		= $(CROSS_COMPILE)as
-LD		= $(CROSS_COMPILE)ld
-CC		= $(CROSS_COMPILE)gcc
-CPP		= $(CC) -E
-AR		= $(CROSS_COMPILE)ar
-NM		= $(CROSS_COMPILE)nm
-
-STRIP		= $(CROSS_COMPILE)strip
-OBJCOPY		= $(CROSS_COMPILE)objcopy
-OBJDUMP		= $(CROSS_COMPILE)objdump
-
-
-export AS LD CC CPP AR NM
-export STRIP OBJCOPY OBJDUMP
-
-CFLAGS := -Wall -O2 -g
-CFLAGS += -I $(shell pwd)/include
-CFLAGS += -I /home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-gnueabihf_sdk-buildroot/bin/../lib/gcc/arm-buildroot-linux-gnueabihf/7.5.0/include/freetype2
-
-LDFLAGS := -lts -lpthread
-LDFLAGS += -L/home/y/Documents/100ask_imx6ull-sdk/ToolChain/arm-buildroot-linux-gnueabihf_sdk-buildroot/bin/../lib/gcc/arm-buildroot-linux-gnueabihf/7.5.0/../../../../arm-buildroot-linux-gnueabihf/lib -lfreetype
-LDFLAGS += -lm
-export CFLAGS LDFLAGS
-
-TOPDIR := $(shell pwd)
-export TOPDIR
-
-TARGET := test
-
-#obj-y += unittest/
-obj-y += business/
-
-
-all : start_recursive_build $(TARGET)
-	@echo $(TARGET) has been built!
-
-start_recursive_build:
-	make -C ./ -f $(TOPDIR)/Makefile.build
-
-$(TARGET) : built-in.o
-	$(CC) -o $(TARGET) built-in.o $(LDFLAGS)
+all:
+	make -C $(KERN_DIR) M=`pwd` modules 
 
 clean:
-	rm -f $(shell find -name "*.o")
-	rm -f $(TARGET)
+	make -C $(KERN_DIR) M=`pwd` modules clean
+	rm -rf modules.order
 
-distclean:
-	rm -f $(shell find -name "*.o")
-	rm -f $(shell find -name "*.d")
-	rm -f $(TARGET)
+obj-m	+= ap3216c.o

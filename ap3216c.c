@@ -48,13 +48,13 @@ static ssize_t ap3216c_read(struct file *file,char __user *buf,size_t size,loff_
 
 static int ap3216c_open(struct inode *node,struct file *file)
 {
-	printk("ap3216c_open %s %s %d",__FILE__,__FUNCTION__,__LINE__);
+	printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 	i2c_smbus_write_byte_data(ap3216c_client,0,0x04);//reset
 
 	mdelay(20);
 
 	i2c_smbus_write_byte_data(ap3216c_client,0,0x03);
-
+	mdelay(250);
 	return 0;
 }
 
@@ -65,22 +65,22 @@ static struct file_operations ap3216c_ops = {
 };
 
 static const struct of_device_id of_match_ids_ap3216c[] = {
-	{.compatible = "company_name,ap3216c",	.data = NULL},
+	{.compatible = "lite-on,ap3216c",	.data = NULL},
 	{ /* END OF LISTS */ },
 };
 
 static const struct i2c_device_id ap3216c_ids[] = {
 	{"ap3216c",(kernel_ulong_t)NULL},
-	{ /* END OF LISTS */},
+	{ /* END OF LISTS */}
 };
 
 static int ap3216c_probe(struct i2c_client *client,const struct i2c_device_id *id)
 {
-	printk("ap3216c_probe %s %s %d",__FILE__,__FUNCTION__,__LINE__);
+	printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 	ap3216c_client = client;
 	//register_chrdev
 	major = register_chrdev(0,"ap3216c",&ap3216c_ops);
-		//创建类
+	//创建类
 	ap3216c_class = class_create(THIS_MODULE,"ap3216c_class");
 
 	//判断返回值
@@ -90,7 +90,7 @@ static int ap3216c_probe(struct i2c_client *client,const struct i2c_device_id *i
 
 static int ap3216c_remove(struct i2c_client *client)
 {
-	printk("ap3216c_remove %s %s %d",__FILE__,__FUNCTION__,__LINE__);
+	printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 	device_destroy(ap3216c_class,MKDEV(major,0));
 	class_destroy(ap3216c_class);
 	//unregister_chedev
@@ -103,7 +103,7 @@ static int ap3216c_remove(struct i2c_client *client)
 static struct i2c_driver i2c_ap3216c_driver = {
 	.driver = {
 		.name = "ap3216c",
-		.of_match_table = of_match_ids_ap3216c
+		.of_match_table = of_match_ids_ap3216c,
 	},
 	//.probe_new = ap3216c_probe, linux 5.4内核的结构体有变更
 	.probe = ap3216c_probe,
@@ -113,13 +113,13 @@ static struct i2c_driver i2c_ap3216c_driver = {
 
 static int __init i2c_driver_ap3216c_init(void)
 {
-	printk("i2c_driver_ap3216c_init %s %s %d",__FILE__,__FUNCTION__,__LINE__);
+	printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 	return i2c_add_driver(&i2c_ap3216c_driver);
 } 
 
 static void __exit i2c_driver_ap3216c_exit(void)
 {
-	return ;
+	i2c_del_driver(&i2c_ap3216c_driver);
 }
 
 module_init(i2c_driver_ap3216c_init);
