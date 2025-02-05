@@ -8,3 +8,4 @@ clean:
 	rm -rf modules.order
 
 obj-m	+= ap3216c.o
+obj-m	+= ap3216c_client.o
