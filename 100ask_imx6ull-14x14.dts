@@ -222,6 +222,10 @@
             status = "okay";
         };
 
+    i2c_bus_virtual {
+        compatible = "yg,i2c-bus-virtual";
+    };
+
 };
 
 &gpmi{

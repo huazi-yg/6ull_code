@@ -7,5 +7,5 @@ clean:
 	make -C $(KERN_DIR) M=`pwd` modules clean
 	rm -rf modules.order
 
-obj-m	+= ap3216c.o
-obj-m	+= ap3216c_client.o
+obj-m	+= i2c_adapter_drv.o
+
