@@ -22,13 +22,35 @@
 #include <linux/of_irq.h>
 #include <linux/spinlock.h>
 
+#define TOUCHSCREEN_POLL_TIMER_MS 10
+
 static const struct of_device_id input_dev_demo_of_match[] = {
 	{ .compatible = "100ask,input_dev_demo", },
 	{ /* sentinel */ }
 };
 
+struct qemu_ts_con{
+	volatile unsigned int x;
+	volatile unsigned int y;
+	volatile unsigned int pressure;
+	volatile unsigned int clean;
+};
+
 static struct input_dev *g_input_dev;
 static int g_irq;
+static struct qemu_ts_con *g_qemu_ts_con;
+static struct timer_list g_ts_timer;
+
+static void ts_irq_timer(unsigned long data)
+{
+	if(g_qemu_ts_con->pressure)
+	{
+		input_event(g_input_dev,EV_ABS,ABS_X,g_qemu_ts_con->x);
+		input_event(g_input_dev,EV_ABS,ABS_Y,g_qemu_ts_con->y);
+		input_sync(g_input_dev);
+		mod_timer(&g_ts_timer,jiffies + msecs_to_jiffies(TOUCHSCREEN_POLL_TIMER_MS));
+	}
+}
 
 static irqreturn_t input_dev_demo_irq(int irq,void *dev_id)
 {
@@ -38,6 +60,21 @@ static irqreturn_t input_dev_demo_irq(int irq,void *dev_id)
 		// input_event(g_input_dev,EV_KEY,xx,0);
 		// input_sync(g_input_dev);
 
+		if(g_qemu_ts_con->pressure)//按下
+		{
+			input_event(g_input_dev,EV_ABS,ABS_X,g_qemu_ts_con->x);
+			input_event(g_input_dev,EV_ABS,ABS_Y,g_qemu_ts_con->y);
+			input_event(g_input_dev,EV_KEY,BTN_TOUCH,1);
+			input_sync(g_input_dev);
+			/*  start timer */
+			mod_timer(&g_ts_timer,jiffies + msecs_to_jiffies(TOUCHSCREEN_POLL_TIMER_MS));
+		}
+		else//松开
+		{
+			input_event(g_input_dev,EV_KEY,BTN_TOUCH,0);
+			input_sync(g_input_dev);
+			/*  stop timer */
+		}
 		printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 
 		return IRQ_HANDLED;
@@ -48,6 +85,7 @@ static int input_dev_demo_probe(struct platform_device *pdev)
     
     struct device *dev = &pdev->dev;
 	//struct resource *irq;
+	struct resource *io;
 	int error;
 
 	int gpio;
@@ -74,12 +112,12 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 	// set 2. which event
 	__set_bit(BTN_TOUCH, g_input_dev->keybit);
 	__set_bit(ABS_MT_SLOT,g_input_dev->absbit);
-	__set_bit(ABS_MT_POSITION_X,g_input_dev->absbit);	
-	__set_bit(ABS_MT_POSITION_Y,g_input_dev->absbit);
+	__set_bit(ABS_X,g_input_dev->absbit);	
+	__set_bit(ABS_Y,g_input_dev->absbit);
 
 	//set parameter
-	input_set_abs_params(g_input_dev, ABS_MT_POSITION_X, 0, 0xffff, 0, 0);
-	input_set_abs_params(g_input_dev, ABS_MT_POSITION_Y, 0, 0xffff, 0, 0);
+	input_set_abs_params(g_input_dev, ABS_X, 0, 0xffff, 0, 0);
+	input_set_abs_params(g_input_dev, ABS_Y, 0, 0xffff, 0, 0);
 
 	//register input device
 	error = input_register_device(g_input_dev);
@@ -88,6 +126,19 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 		return error;
 	}
     //hardware operation
+
+	io = platform_get_resource(pdev, IORESOURCE_MEM, 0);
+	if(!io)
+	{
+		dev_err(dev, "Failed to get resource\n");
+		return -EINVAL;
+	}
+	printk("start = %d, end = %d\n", io->start, io->end);
+	g_qemu_ts_con = ioremap(io->start, io->end - io->start + 1);
+
+	//setup timer
+	setup_timer(&g_ts_timer,ts_irq_timer,NULL);
+    
 
 	//irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
 	//g_irq = gpio_to_irq(gpio);
@@ -100,6 +151,8 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 
 static int input_dev_demo_remove(struct platform_device *pdev)
 {
+	del_timer(&g_ts_timer);
+	iounmap(g_qemu_ts_con);
 	free_irq(g_irq,NULL);
 	input_unregister_device(g_input_dev);
     return 0;
