@@ -1,0 +1,24 @@
+{
+  "configurations": [
+    {
+      "name": "windows-gcc-x64",
+      "includePath": [
+        "${workspaceFolder}/**",
+        "C:/Users/huazi/Documents/GitHub/裸机/input_dev/Linux-4.9.88/include",
+        "C:/Users/huazi/Documents/GitHub/裸机/input_dev/Linux-4.9.88/arch/arm/include",
+        "C:/Users/huazi/Documents/GitHub/裸机/input_dev/Linux-4.9.88/arch/arm/include/generated"
+      ],
+      "defines": [
+        "_DEBUG",
+        "UNICODE",
+        "_UNICODE"
+      ],
+      "windowsSdkVersion": "10.0.22621.0",
+      "cStandard": "c17",
+      "cppStandard": "c++17",
+      "intelliSenseMode": "windows-gcc-x64",
+      "compilerPath": "gcc"
+    }
+  ],
+  "version": 4
+}
