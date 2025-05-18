@@ -17,9 +17,8 @@
 #include <linux/gpio.h>
 #include <linux/gpio/consumer.h>
 #include <linux/of.h>
-#include <linux/of_platform.h>
-#include <linux/of_gpio.h>
 #include <linux/of_irq.h>
+#include <linux/of_gpio.h>
 #include <linux/spinlock.h>
 
 #define TOUCHSCREEN_POLL_TIMER_MS 10
@@ -30,9 +29,9 @@ static const struct of_device_id input_dev_demo_of_match[] = {
 };
 
 struct qemu_ts_con{
+	volatile unsigned int pressure;
 	volatile unsigned int x;
 	volatile unsigned int y;
-	volatile unsigned int pressure;
 	volatile unsigned int clean;
 };
 
@@ -108,10 +107,9 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 	// set 1. which event type
 	__set_bit(EV_KEY, g_input_dev->evbit);
 	__set_bit(EV_ABS, g_input_dev->evbit);
-    
+    __set_bit(INPUT_PROP_DIRECT,g_input_dev->propbit);
 	// set 2. which event
 	__set_bit(BTN_TOUCH, g_input_dev->keybit);
-	__set_bit(ABS_MT_SLOT,g_input_dev->absbit);
 	__set_bit(ABS_X,g_input_dev->absbit);	
 	__set_bit(ABS_Y,g_input_dev->absbit);
 
@@ -136,8 +134,7 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 	printk("start = %d, end = %d\n", io->start, io->end);
 	g_qemu_ts_con = ioremap(io->start, io->end - io->start + 1);
 
-	//setup timer
-	setup_timer(&g_ts_timer,ts_irq_timer,NULL);
+
     
 
 	//irq = platform_get_resource(pdev, IORESOURCE_IRQ, 0);
@@ -146,12 +143,14 @@ static int input_dev_demo_probe(struct platform_device *pdev)
 
 	g_irq	= gpio_to_irq(gpio);
 	error = request_irq(g_irq, input_dev_demo_irq, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING, "input_dev_demo", NULL);
+	//setup timer
+	setup_timer(&g_ts_timer,ts_irq_timer,NULL);
     return 0;
 }
 
 static int input_dev_demo_remove(struct platform_device *pdev)
 {
-	del_timer(&g_ts_timer);
+	del_timer_sync(&g_ts_timer);
 	iounmap(g_qemu_ts_con);
 	free_irq(g_irq,NULL);
 	input_unregister_device(g_input_dev);
