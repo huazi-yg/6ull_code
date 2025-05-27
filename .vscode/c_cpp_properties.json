@@ -1,17 +1,17 @@
 {
   "configurations": [
     {
-      "name": "windows-gcc-x64",
+      "name": "Linux",
       "includePath": [
-        "${workspaceFolder}/**"
+        "${workspaceFolder}/**",
+        "${workspaceFolder}/LINUX-4.9.88/include",
+        "${workspaceFolder}/LINUX-4.9.88/arch/arm/include",
+        "${workspaceFolder}/LINUX-4.9.88/arch/arm/include/generated",
+        "${workspaceFolder}/LINUX-4.9.88/include/uapi",
+        "${workspaceFolder}/LINUX-4.9.88/arch/arm/include/uapi"
       ],
-      "compilerPath": "gcc",
-      "cStandard": "${default}",
-      "cppStandard": "${default}",
-      "intelliSenseMode": "windows-gcc-x64",
-      "compilerArgs": [
-        ""
-      ]
+      "compileCommands": "${workspaceFolder}/Linux-4.9.88/compile_commands.json",
+      "intelliSenseMode": "linux-gcc-arm"
     }
   ],
   "version": 4
