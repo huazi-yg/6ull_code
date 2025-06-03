@@ -12,6 +12,8 @@
 #include <linux/pinctrl/pinmux.h>
 #include <linux/slab.h>
 #include <linux/regmap.h>
+#include <linux/module.h>
+#include "core.h"
 
 static struct pinctrl_dev *g_pinctrl_dev;
 
@@ -32,10 +34,13 @@ struct virtual_function_desc  {
     int num_groups;
 };
 
+static const char * func0_groups[] = {"pin0","pin1","pin2","pin3"};
+static const char * func1_groups[] = {"pin0","pin1"};
+static const char * func2_groups[] = {"pin2","pin3"};
 static const struct virtual_function_desc g_virtual_function_descs[] = {
-    {"gpio",{"pin0","pin1","pin2","pin3"},4},
-    {"i2c",{"pin0","pin1"},2},
-    {"uart",{"pin2","pin3"},2},
+    {"gpio",func0_groups,4},
+    {"i2c",func1_groups,2},
+    {"uart",func2_groups,2},
 };
 
 static int virtual_pinctrl_get_groups_count(struct pinctrl_dev *pctl)
@@ -43,8 +48,8 @@ static int virtual_pinctrl_get_groups_count(struct pinctrl_dev *pctl)
     return pctl->desc->npins;
 }
 
-static int virtual_pinctrl_get_group_name(struct pinctrl_dev *pctl, unsigned selector, const char **name)
-{
+static const char *virtual_pinctrl_get_group_name (struct pinctrl_dev *pctl,
+				       unsigned selector){
     return pctl->desc->pins[selector].name;
 }
 
@@ -65,16 +70,15 @@ static int virtual_pinctrl_dt_node_to_map(struct pinctrl_dev *pctl, struct devic
     //确定引脚个数
     int pin_nums = 0;
     int i;
-    char *pin;
-    char *func;
-    unsigned long *config;
+    const char *pin;
+    const char *func;
+    unsigned int config;
     unsigned long *configs;
 
     struct pinctrl_map *pinctrl_map;
     //
     while(1)
     {
-        
         if(of_property_read_string_index(np, "groups", pin_nums, &pin) == 0)
         {
             pin_nums++;
@@ -87,7 +91,7 @@ static int virtual_pinctrl_dt_node_to_map(struct pinctrl_dev *pctl, struct devic
 
     }
     //存入pinctrl_map
-    pinctrl_map = kzalloc(sizeof(struct pinctrl_map) * pin_nums * 2,  GFP_KERNEL);
+    pinctrl_map = kmalloc(sizeof(struct pinctrl_map) * pin_nums * 2,  GFP_KERNEL);
     if(!pinctrl_map)
     {
         printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
@@ -99,6 +103,7 @@ static int virtual_pinctrl_dt_node_to_map(struct pinctrl_dev *pctl, struct devic
         //get pin/func/config
         of_property_read_string_index(np, "groups", i, &pin); 
         of_property_read_string_index(np, "functions", i, &func);
+
         of_property_read_u32_index(np, "configs", i, &config);
 
         configs = kzalloc(sizeof(configs), GFP_KERNEL);
@@ -113,7 +118,7 @@ static int virtual_pinctrl_dt_node_to_map(struct pinctrl_dev *pctl, struct devic
         pinctrl_map[i*2].data.mux.group = pin;
         pinctrl_map[i*2].data.mux.function = func;
 
-        pinctrl_map[i*2+1].type = PIN_MAP_TYPE_CONFIGS_GROUP;
+        pinctrl_map[i*2+1].type = PIN_MAP_TYPE_CONFIGS_PIN;
         pinctrl_map[i*2+1].data.configs.group_or_pin = pin;
         pinctrl_map[i*2+1].data.configs.configs = configs;
         configs[0] = config;
@@ -141,7 +146,7 @@ static void virtual_pinctrl_dt_free_map(struct pinctrl_dev *pctl, struct pinctrl
     }
 }
 
-static int virtual_pinctrl_pin_dbg_show(struct pinctrl_dev *pctl, struct seq_file *s, unsigned offset)
+static void virtual_pinctrl_pin_dbg_show(struct pinctrl_dev *pctl, struct seq_file *s, unsigned offset)
 {
     seq_printf(s, "%s\n", dev_name(pctl->dev));
 }
@@ -164,12 +169,12 @@ static int virtual_pinctrl_get_functions_count(struct pinctrl_dev *pctl)
 {
     return ARRAY_SIZE(g_virtual_function_descs);
 }
-
-static const char * virtual_pinctrl_get_function_name(struct pinctrl_dev *pctl, unsigned selector)
+static const char *virtual_pinctrl_get_function_name (struct pinctrl_dev *pctldev,
+					  unsigned selector)
 {
     if(selector >= ARRAY_SIZE(function_names)) {
         printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
-        return -EINVAL;
+        return NULL;
     }
     return g_virtual_function_descs[selector].func_name;;
 }
@@ -209,19 +214,19 @@ static int virtual_pinctrl_pin_config_set(struct pinctrl_dev *pctl, unsigned pin
         printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
         return -EINVAL;
     }
-    g_configs[pin] = configs;
-    printk("config %s as 0x%1x\n",pctl->desc->pins[pin].name,g_virtual_function_descs[pin].func_name);
+    g_configs[pin] = *configs;
+    printk("config %s as 0x%lx\n",pctl->desc->pins[pin].name,*configs);
     return 0;
 }   
 
 static void virtual_pinctrl_pin_config_dbg_show(struct pinctrl_dev *pctl, struct seq_file *s, unsigned pin_id)
 {
-    seq_printf(s, "0x%1x\n", g_configs[pin_id]); 
+    seq_printf(s, "0x%lx\n", g_configs[pin_id]); 
 }
 
 static void virtual_pinctrl_pin_config_group_dbg_show(struct pinctrl_dev *pctl, struct seq_file *s, unsigned pin_id)
 {
-    seq_printf(s, "0x%1x\n", g_configs[pin_id]); 
+    seq_printf(s, "0x%lx\n", g_configs[pin_id]); 
 }   
 
 
@@ -236,12 +241,13 @@ static const struct pinconf_ops virtual_pinconf_ops = {
 
 static int virtual_pinctrl_probe(struct platform_device *pdev)
 {
+    
+    struct pinctrl_desc *pinctrl_desc;
+    
     printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
 
-    static struct pinctrl_desc *pinctrl_desc;
-
     //分配pinctrl_desc
-    pinctrl_desc = kzalloc(sizeof(struct pinctrl_desc), GFP_KERNEL);
+    pinctrl_desc = devm_kzalloc(&pdev->dev, sizeof(*pinctrl_desc), GFP_KERNEL);
     if (!pinctrl_desc) {
         printk("%s %s %d\n",__FILE__,__FUNCTION__,__LINE__);
         return -ENOMEM;

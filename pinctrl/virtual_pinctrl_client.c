@@ -14,6 +14,8 @@
 #include <linux/slab.h>
 #include <linux/regmap.h>
 
+#include <linux/module.h>
+
 static const struct of_device_id virtual_pinctrl_client_of_match[] = {
     { .compatible = "virtual_pinctrl_client", },
     { },
